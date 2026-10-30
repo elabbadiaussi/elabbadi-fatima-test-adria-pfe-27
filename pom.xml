@@ -19,6 +19,7 @@
     <description>Plateforme bancaire microservices - Spring Cloud, Spring AI, Kafka</description>
 
     <modules>
+        <module>account-service</module>
     </modules>
 
     <properties>
