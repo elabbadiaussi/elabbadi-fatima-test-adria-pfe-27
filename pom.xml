@@ -20,6 +20,7 @@
 
     <modules>
         <module>account-service</module>
+        <module>transaction-service</module>
     </modules>
 
     <properties>
