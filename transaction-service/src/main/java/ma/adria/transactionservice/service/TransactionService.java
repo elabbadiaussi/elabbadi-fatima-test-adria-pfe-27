@@ -6,8 +6,10 @@ import ma.adria.transactionservice.client.AccountDto;
 import ma.adria.transactionservice.client.AccountRestClient;
 import ma.adria.transactionservice.domain.Transaction;
 import ma.adria.transactionservice.domain.TransactionType;
+import ma.adria.transactionservice.event.TransactionCreatedEvent;
 import ma.adria.transactionservice.repository.TransactionRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,7 @@ public class TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final AccountRestClient accountRestClient;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${bank.transaction.max-amount:1000}")
     private BigDecimal maxAmount;
@@ -67,6 +70,9 @@ public class TransactionService {
 
         // Regle : apres l'enregistrement, mise a jour du solde
         accountRestClient.debit(accountId, amount.doubleValue());
+
+        // Evenement Kafka publie apres le commit (voir TransactionEventPublisher)
+        publish(transaction);
         log.info("Transaction {} enregistree sur le compte {} ({} {})",
                 transaction.getId(), accountId, amount, currency);
         return transaction;
@@ -100,8 +106,15 @@ public class TransactionService {
             accountRestClient.credit(fromAccountId, amount.doubleValue());
             throw e;
         }
+
+        publish(debit);
+        publish(credit);
         log.info("Virement de {} {} du compte {} vers {}", amount, currency, fromAccountId, toAccountId);
         return List.of(debit, credit);
+    }
+
+    private void publish(Transaction t) {
+        eventPublisher.publishEvent(TransactionCreatedEvent.of(t.getId(), t.getAccountId(), t.getAmount(), t.getCurrency()));
     }
 
     private void checkAmount(BigDecimal amount) {
