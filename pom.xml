@@ -24,6 +24,7 @@
         <module>gateway-service</module>
         <module>account-service</module>
         <module>transaction-service</module>
+        <module>bank-agent</module>
     </modules>
 
     <properties>
